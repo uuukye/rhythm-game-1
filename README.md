@@ -2,6 +2,8 @@
 a rhythm game with just two songs
 It consists of three lanes, with hit and hold notes
 
+(The first song was from a copyright free site, and the second song was made by my friend)
+
 Arrow keys to move!
 
 Left arrow key for left lane
