@@ -12,3 +12,5 @@ Up arrow key for right lane
 
 the hold notes were really hard to code, because you had to code the hit, the hold, and the release. The release was the hardest, the release did not register for some reason, but I managed to fix it. I also made the hold function more forgiving, if you accidentally release for a bit during the hold, it would still count as a hold.
 
+Also, I was really tired of updating the rectangle's and the other shape's position with windowWidth and windowHeight whenever the canvas would get resized. So I set a 800 by 500 canvas, and centered it so it looks way better.
+
