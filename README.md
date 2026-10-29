@@ -14,3 +14,4 @@ the hold notes were really hard to code, because you had to code the hit, the ho
 
 Also, I was really tired of updating the rectangle's and the other shape's position with windowWidth and windowHeight whenever the canvas would get resized. So I set a 800 by 500 canvas, and centered it so it looks way better.
 
+<img width="865" height="533" alt="Screenshot 2026-10-29 at 3 25 19 PM" src="https://github.com/user-attachments/assets/8d0a80a5-9cc5-48ce-b1c6-7e3f417dec81" />
