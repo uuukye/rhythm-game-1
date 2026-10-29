@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ninew program 1</title>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.11.10/lib/p5.min.js"></script>
+<style>
+body{margin:0;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;width:100vw;height:100vh}
+canvas{display:block;width:min(800px,100vw);height:auto;max-height:100vh;aspect-ratio:8/5}
+</style>
+</head>
+<body>
+<script>
+let gameOk,feedback="",feedbackUntil=0,feedbackLane=-1,song,gameStarted=false,gameStartMs=0,audioStartMs=null,startTimer=null,screen="menu",selectedSong=0,menuError="";
+let bpm=77;
+let beatLength=60000/bpm;
+let countInLength=4*beatLength;
+const noteTravelTime=1600;
+const verticalLaneWidth=58;
+const verticalLaneStart=313;
+let holdTickLength=0.125*beatLength;
+let holdReleaseWindow=beatLength*0.25;
+const holdFadeLength=90;
+let chart1l1=[
+[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1.5,2,0],[1.75,0,0],[2,1,0],[2.25,2,0],[2.5,0,0],[2.75,1,0],[3,0,0],[3.25,2,0],[3.5,1,0],[3.75,0,0],[4,2,0],[4.25,2,0],[4.5,2,0],[4.75,2,0],[5.5,0,0],[5.75,1,0],
+[6,2,0],[6.25,1,0],[6.5,0,0],[6.75,2,0],[7,1,0.75],[7.5,0,0],[7.75,2,0],[8,2,0],[8.25,0,0],[8.5,2,0],[8.75,0,0],[9,1,0],[9.25,2,0],[9.5,1,0],[9.75,0,0],[10,2,0],[10.25,1,0],[10.5,0,0],[10.75,2,0],[11,0,0],
+[11.25,1,0],[11.5,2,0.5],[11.75,0,0],[12,1,0],[12.25,2,0],[12.5,0,0],[12.75,2,0],[13,1,0],[13.25,0,0],[13.5,2,0],[13.75,1,0],[14,0,0],[14.25,2,0],[14.5,1,1],[14.75,0,0],[15.25,2,0],[15.5,1,0],[15.75,0,0],[16,2,0],[16.25,0,0],
+[16.5,1,0],[16.75,2,0],[17,1,0],[17.25,1,0],[17.5,0,0],[17.75,2,0],[18,1,0],[18.25,2,1],[18.5,0,0],[18.75,1,0],[19,2,0],[19.25,0,0],[19.5,1,0],[19.75,0,0],[20,2,0],[20.25,1,0],[20.5,1,0],[20.75,0,0],[21,2,0],[21.25,2,0],
+[21.5,1,0.75],[21.75,0,0],[22,2,0],[22.25,0,0],[22.5,1,0],[22.75,2,0],[23,1,0],[23.25,2,0],[23.5,1,0],[23.75,0,0],[24,0,0],[24.25,2,0],[24.5,1,1],[24.75,0,0],[25,0,0],[25.25,2,0],[25.5,1,0],[25.75,0,0],[26,2,0],[26.25,1,0],
+[26.5,0,0],[26.75,2,0],[27,1,0],[27.25,0,0],[27.5,2,0],[27.75,1,0],[28,2,0],[28.25,0,0.75],[28.5,2,0],[28.75,1,0],[29,0,0],[29.25,2,0],[29.5,1,0],[29.75,0,0],[30,1,0],[30.25,2,0],[30.5,0,0],[30.75,2,0.5],[31,1,0],[31.25,0,0],
+[31.5,1,0],[31.75,2,0],[32,0,0],[32.25,2,0],[32.5,1,0],[32.75,1,1.25],[33,0,0],[33.25,2,0],[33.5,1,0],[33.75,0,0],[34,2,0],[34.25,1,0],[34.5,0,0.5],[34.75,2,0],[35,1,0],[35.25,1,0],[35.5,0,0],[35.75,2,0],[36,0,0],[36.25,2,1.5],
+[36.5,1,0],[36.75,0,0],[37,2,0],[37.25,1,0],[37.5,0,0],[37.75,2,0],[38,1,0],[38.25,0,0],[38.5,2,0],[38.75,1,0],[39,2,0],[39.25,0,0],[39.5,1,0],[39.75,1,0.75],[40,2,0],[40.25,0,0],[40.5,1,0],[40.75,2,0],[41,0,0],[41.25,0,0],
+[41.5,2,0],[41.75,1,0],[42,1,0],[42.25,0,1],[42.5,2,0],[42.75,1,0],[43,0,0],[43.25,2,0],[43.5,1,0],[43.75,0,0],[44,2,0],[44.25,1,0],[44.5,0,0],[44.75,2,0],[45,0,0],[45.25,1,0],[45.5,2,0],[45.75,0,0],[46,0,0],[46.25,2,0],
+[46.5,1,0],[46.75,0,0.5],[47,2,0],[47.25,1,0],[47.5,2,0],[47.75,0,0],[48,1,0],[48.25,0,0],[48.5,2,0],[48.75,1,0],[49,2,0.5],[49.25,0,0],[49.5,1,0],[49.75,2,0],[50,0,0],[50.25,1,0],[50.5,2,0],[50.75,1,0],[51,0,0.75],[51.25,2,0],
+[51.5,1,0],[51.75,0,0],[52,2,0],[52.25,1,0.5],[52.5,0,0],[52.75,2,0],[53,0,0],[53.25,2,0],[53.5,1,0],[53.75,0,0],[54,2,0],[54.25,0,0.75],[54.5,1,0],[54.75,2,0],[55,1,0],[55.25,0,0],[55.5,2,0],[55.75,1,0],[56,0,0],[56.25,2,0],
+[56.5,1,0.5],[56.75,0,0],[57,2,0],[57.25,1,0],[57.5,0,0],[57.75,2,0],[58,1,0],[58.25,0,0],[58.5,2,0],[58.75,1,0],[59,0,0],[59.25,2,0.75],[59.5,1,0],[59.75,0,0],[60,1,0],[60.25,2,0],[60.5,0,0],[60.75,2,0],[61,1,0],[61.25,0,0],
+[61.5,2,0],[61.75,1,0],[62,0,0],[62.25,2,0.5],[62.5,1,0],[62.75,0,0],[63,1,0],[63.25,2,0],[63.5,0,0],[63.75,1,0],[64,0,0],[64.25,2,0],[64.5,1,0],[64.75,0,0],[65,2,0],[65.25,1,0],[65.5,0,0.5],[65.75,2,0],[66,1,0],[66.25,0,0],
+[66.5,2,0],[66.75,1,0],[67,0,0],[67.25,2,0],[67.5,1,0],[67.75,0,0],[68,2,0],[68.25,0,0],[68.5,1,0],[68.75,2,0],[69,0,0],[69.25,1,0.75],[69.5,2,0],[69.75,0,0],[70,1,0],[70.25,0,0],[70.5,2,0.75],[70.75,1,0],[71,0,0],[71.25,2,0],
+[71.5,1,0],[71.75,0,0],[72,0,0],[72.25,2,0],[72.5,1,0],[72.75,0,0],[73,1,0],[73.25,2,0],[73.5,0,1],[73.75,2,0],[74,1,0],[74.25,0,0],[74.5,2,0],[74.75,1,0],[75,0,0],[75.25,2,0],[75.5,1,0.5],[75.75,0,0],[76,2,0],[76.25,1,0],
+[76.5,0,0],[76.75,2,0],[77,1,0],[77.25,0,0],[77.5,2,0],[77.75,1,0],[78,0,0],[78.25,1,1],[78.5,2,0],[78.75,0,0],[79,1,0],[79.25,2,0],[79.5,0,0],[79.75,2,0],[80,0,0],[80.25,2,0],[80.5,1,0],[80.75,0,0],[81,2,0],[81.25,1,0.5],
+[81.5,0,0],[81.75,2,0],[82,1,0],[82.25,2,0],[82.5,0,0],[82.75,1,0],[83,2,0],[83.25,0,0],[83.5,1,0],[83.75,2,0],[84,1,0.75],[84.25,0,0],[84.5,2,0],[84.75,1,0],[85,0,0],[85.25,2,0],[85.5,1,0],[85.75,0,0],[86,2,0.5],[86.25,1,0],
+[86.5,0,0],[86.75,2,0],[87,0,0],[87.25,2,0],[87.5,1,0],[87.75,0,0],[88,2,0],[88.25,1,0.5],[88.5,0,0],[88.75,2,0],[89,1,0],[89.25,0,0],[89.5,2,0],[89.75,1,0],[90,0,0],[90.25,2,0.75],[90.5,1,0],[90.75,0,0],[91,2,0],[91.25,1,0],
+[91.5,0,0],[91.75,2,0],[92,1,0],[92.25,0,0],[92.5,2,0],[92.75,1,0],[93,0,0],[93.25,2,0],[93.5,1,0],[93.75,0,0],[94,1,0],[94.25,2,0.75]
+].map(([b,l,h])=>({b:b-0.125,l,h}));
+
+const chart1l1Base=chart1l1.map(note=>({b:note.b,l:note.l,h:note.h}));
+const chart2l1Base=[
+[0,1,0.5],[1,2,0],[2,0,0],[2.5,2,0],[3,1,0],[4,2,0],[4.25,0,0],[4.5,1,0],[4.75,2,0],[6,0,0],[6.25,1,0],[8,0,0],[8.25,2,0],[10,1,0],[10.25,0,0],[12,2,0],[12.25,1,0],[14,0,0],[14.25,2,0],[16,0,0],
+[16.25,2,0],[18.25,1,0],[20,0,0],[20.5,1,0],[21,2,0],[21.25,0,0],[21.5,1,0],[22,2,0.5],[22.5,0,0],[23,1,0],[23.25,2,0],[23.5,0,0],[24,1,0],[24.5,2,0],[25,0,0],[25.25,1,0],[25.5,0,0],[26,2,0],[26.5,1,0],[27,0,0],
+[27.25,2,0],[27.5,1,0],[28,0,0],[28.5,1,0.75],[29,2,0],[29.25,0,0],[29.5,2,0],[30,1,0],[30.5,0,0],[31,2,1],[31.25,1,0],[31.5,0,0],[31.75,1,0],[32,0,0],[32.5,2,0],[33,0,0],[33.25,1,0],[33.5,2,0],[34,1,0],[34.5,0,0],
+[35,2,0],[35.25,1,0],[35.5,0,0],[36,1,1.25],[36.5,2,0],[37,0,0],[37.25,2,0],[37.5,1,0],[38,0,0],[38.5,2,0],[39,1,1],[39.25,2,0],[39.5,0,0],[40,2,0],[40.5,1,0],[41,0,0],[41.25,2,0],[41.5,0,0],[42,1,0],[42.5,2,0],
+[43,1,0.75],[43.25,2,0],[43.5,0,0],[44,1,0],[44.5,0,0],[45,1,0],[45.25,2,0],[45.5,0,0],[46,2,0],[46.5,1,0],[47,0,0],[47.25,2,0],[47.5,1,0],[48,0,0.75],[48.5,2,0],[49,0,0],[49.25,1,0],[49.5,0,0],[50,1,0],[50.5,2,0],
+[50.75,1,0],[51,0,0],[51.25,2,0],[51.5,1,0],[52,0,0],[52.5,2,0],[53,0,0.5],[53.25,1,0],[53.5,2,0],[54,1,0],[54.5,0,0],[55,1,0],[55.25,0,0],[55.5,2,0],[56,1,0],[56.5,0,0],[56.75,2,0],[57,1,1.25],[57.25,0,0],[57.5,2,0],
+[58,0,0],[58.5,1,0],[59,2,0],[59.25,0,0],[59.5,2,0],[60,1,0],[60.5,2,0.5],[61,0,0],[61.25,1,0],[61.5,2,0],[62,1,0],[62.5,0,0],[63,2,0],[63.25,1,0],[63.5,0,0],[64,2,0],[64.5,0,0],[65,1,0.75],[65.25,2,0],[65.5,0,0],
+[66,1,0],[66.5,2,0],[67,0,0],[67.25,1,0],[67.5,2,0],[68,1,0],[68.5,0,0.75],[69,2,0],[69.25,1,0],[69.5,0,0],[70,1,0],[70.5,2,0],[71,1,0],[71.25,0,0],[71.5,2,0],[72,1,0],[72.5,0,0],[73,2,0.75],[73.25,1,0],[73.5,0,0],
+[74,2,0],[74.5,1,0],[75,0,0],[75.25,2,0],[75.5,1,0],[76,0,0],[76.5,1,0.75],[77,0,0],[77.25,2,0],[77.5,1,0],[78,2,0],[78.5,0,0],[79,2,1.25],[79.25,1,0],[79.5,0,0],[80,1,0],[80.5,0,0],[81,2,0],[81.25,0,0],[81.5,1,0],
+[82,2,0],[82.5,0,0],[83,1,0],[83.25,2,0],[83.5,0,0],[84,1,0],[84.5,2,0.75],[85,0,0],[85.25,1,0],[85.5,2,0],[86,1,0],[86.5,0,0],[87,2,0],[87.25,1,0],[87.5,2,0],[87.75,0,0],[88,2,0.5],[88.5,1,0],[89,0,0],[89.25,2,0],
+[89.5,0,0],[90,1,0],[90.5,0,0],[91,1,0.75],[91.25,0,0],[91.5,2,0],[92,1,0],[92.5,0,0],[93,2,0],[93.25,1,0],[93.5,2,0],[94,1,0],[94.5,0,0.5],[94.75,1,0],[95,2,0],[95.25,0,0],[95.5,1,0],[96,2,0],[96.5,0,0],[97,1,0],
+[97.25,2,0],[97.5,0,0],[98,1,0],[98.5,2,0],[99,0,0],[99.25,2,0],[99.5,1,0],[100,0,0],[100.5,1,1.25],[101,2,0],[101.25,0,0],[101.5,2,0],[102,1,0],[102.5,0,0],[103,2,0],[103.25,0,0],[103.5,1,0],[104,2,0],[104.5,0,0],[105,1,0],
+[105.25,2,0],[105.5,1,0],[106,0,1],[106.5,2,0],[106.75,1,0],[107,2,0],[107.25,0,0],[107.5,1,0],[108,2,0],[108.5,0,0],[109,1,0.75],[109.25,2,0],[109.5,0,0],[110,1,0],[110.5,2,0],[111,1,0],[111.25,0,0],[111.5,1,0],[112,0,0],[112.5,2,0],
+[112.75,1,0],[113,2,0],[113.25,0,0],[113.5,1,0],[114,2,0.5],[114.5,0,0],[115,2,0],[115.25,1,0],[115.5,2,0],[116,0,0],[116.5,1,0],[117,2,0],[117.25,0,0],[117.5,2,0],[118,1,0.5],[118.5,0,0],[119,1,0],[119.25,2,0],[119.5,1,0],[120,2,0],
+[120.5,0,0],[121,2,0],[121.25,1,0],[121.5,0,0],[122,2,0],[122.5,1,0],[123,2,0.75],[123.25,0,0],[123.5,1,0],[124,2,0],[124.5,0,0],[125,1,0],[125.5,0,0],[126,2,0],[126.5,0,0.75],[127,2,0],[127.5,0,0],[128,2,0]
+].map(([b,l,h])=>({b,l,h}));
+let chart2l1=[];
+let chart=chart1l1;
+let laneA=[false,false,false];
+let laneFlashStart=[-1000,-1000,-1000];
+let accuracyPoints=0;
+let accuracyPossible=0;
+let judgedNotes=new Set();
+let accuracyDisplay="100.00%";
+
+function appendChartThroughEnd(chartData,duration){
+if(!Number.isFinite(duration)||duration<=0)return;
+const endStep=Math.floor((duration*1000/beatLength-0.75)*4);
+const pulse=[1,1,1,0,1,1,0,1,1,0,1,1,1,1,0,1,1,0,1,1,1,0,1,1,1,1,0,1,1,0,1,1];
+const lanePattern=[1,2,0,2,1,0,2,1,0,1,2,0,1,0,2,1,2,0,1,2,0,1,2,1,0,2,1,0,2,1,0,2];
+const holdEnds=[-1,-1,-1];
+let startStep=0;
+for(const note of chartData){
+startStep=Math.max(startStep,Math.floor((note.b-0.25)*4)+1);
+if(note.h>0)holdEnds[note.l]=Math.max(holdEnds[note.l],note.b+note.h);
+}
+for(let step=startStep;step<=endStep;step++){
+if(!pulse[step%pulse.length])continue;
+const noteBeat=step/4+0.25;
+const section=Math.floor(step/32);
+const baseLane=(lanePattern[step%lanePattern.length]+section%3)%3;
+let hold=0;
+const holdStep=step%64;
+if(holdStep===13)hold=0.75;
+else if(holdStep===29)hold=0.5;
+else if(holdStep===45)hold=1;
+const lane=[baseLane,(baseLane+1)%3,(baseLane+2)%3].find(candidate=>holdEnds[candidate]<=noteBeat+0.0001);
+if(lane===undefined)continue;
+chartData.push({b:noteBeat,l:lane,h:hold});
+if(hold>0)holdEnds[lane]=noteBeat+hold;
+}
+chartData.sort((a,b)=>a.b-b.b);
+}
+
+function fixLaneOverlaps(chartData){
+chartData.sort((a,b)=>a.b-b.b);
+const holdEnds=[-Infinity,-Infinity,-Infinity,-Infinity,-Infinity];
+let currentBeat=null;
+let usedAtBeat=new Set();
+for(const note of chartData){
+if(currentBeat===null||Math.abs(note.b-currentBeat)>0.0001){
+currentBeat=note.b;
+usedAtBeat=new Set();
+}
+const group=note.l<3?[0,1,2]:[3,4];
+const blocked=lane=>holdEnds[lane]>=note.b-0.0001||usedAtBeat.has(lane);
+if(blocked(note.l)){
+const target=group.find(lane=>!blocked(lane));
+if(target!==undefined)note.l=target;
+}
+usedAtBeat.add(note.l);
+if(note.h>0)holdEnds[note.l]=Math.max(holdEnds[note.l],note.b+note.h);
+}
+chartData.sort((a,b)=>a.b-b.b);
+}
+
+function prepareCharts(duration){
+chart1l1=chart1l1Base.map(note=>({b:note.b,l:note.l,h:note.h}));
+appendChartThroughEnd(chart1l1,duration);
+chart2l1=chart2l1Base.map(note=>({b:note.b,l:note.l,h:note.h}));
+appendChartThroughEnd(chart2l1,duration);
+for(const chartData of [chart1l1,chart2l1]){
+
+fixLaneOverlaps(chartData);
+for(const note of chartData)note.b+=0.25;
+}
+const endBeat=duration*1000/beatLength-0.5;
+for(const chartData of [chart1l1,chart2l1]){
+for(let i=chartData.length-1;i>=0;i--){
+const note=chartData[i];
+if(note.b>endBeat)chartData.splice(i,1);
+else if(note.b+note.h>endBeat)note.h=Math.max(0,endBeat-note.b);
+}
+}
+}
+
+function recordAccuracy(note,grade){
+if(judgedNotes.has(note))return;
+judgedNotes.add(note);
+accuracyPossible+=100;
+accuracyPoints+=grade==="GREAT"?100:grade==="GOOD"?75:grade==="OK"?50:0;
+accuracyDisplay=(accuracyPossible?100*accuracyPoints/accuracyPossible:100).toFixed(2)+"%";
+}
+
+function judgeGrade(diff){
+if(diff<=55)return "GREAT";
+if(diff<=90)return "GOOD";
+if(diff<=125)return "OK";
+return "MISS";
+}
+
+function setup(){
+noStroke();
+createCanvas(800,500);
+gameOk=true;
+song=new Audio("song1.mp3");
+song.preload="auto";
+window.addEventListener("blur",releaseAllKeys);
+document.addEventListener("visibilitychange",()=>{
+if(document.hidden)releaseAllKeys();
+});
+}
+
+function startSelectedGame(){
+if(startTimer!==null){clearTimeout(startTimer);startTimer=null;}
+bpm=selectedSong===0?77:100;
+beatLength=60000/bpm;
+countInLength=4*beatLength;
+holdTickLength=0.125*beatLength;
+holdReleaseWindow=0.25*beatLength;
+screen="game";
+menuError="";
+gameStarted=false;
+audioStartMs=null;
+song.pause();
+song.muted=true;
+try{
+song.currentTime=0;
+song.load();
+const attempt=song.play();
+if(attempt)attempt.catch(()=>{});
+}catch(e){}
+const duration=Number.isFinite(song.duration)&&song.duration>0?song.duration:(selectedSong===0?180:81.344);
+prepareCharts(duration);
+chart=selectedSong===0?chart1l1:chart2l1;
+laneA=[false,false,false];
+laneFlashStart=[-1000,-1000,-1000];
+accuracyPoints=0;
+accuracyPossible=0;
+judgedNotes=new Set();
+accuracyDisplay="100.00%";
+for(const note of chart){
+for(const key of ["hit","broken","holding","missed","started","brokenAt","holdEndTime","nextHoldTickTime","startDiff","fading","fadingAt","releasePending","releaseAt"])delete note[key];
+}
+gameStartMs=performance.now();
+gameStarted=true;
+startTimer=setTimeout(()=>{
+startTimer=null;
+if(!gameStarted||screen!=="game")return;
+try{
+song.currentTime=0;
+song.muted=false;
+if(song.paused){
+const attempt=song.play();
+if(attempt)attempt.catch(()=>{});
+}
+audioStartMs=performance.now();
+}catch(e){
+song.muted=false;
+const attempt=song.play();
+audioStartMs=performance.now();
+if(attempt)attempt.catch(()=>{});
+}
+},countInLength);
+}
+
+function getElapsedTime(){
+return gameStarted?performance.now()-gameStartMs:0;
+}
+
+function getNoteTime(note){
+const musicStartOffset=audioStartMs===null?countInLength:audioStartMs-gameStartMs;
+return musicStartOffset+note.b*beatLength;
+}
+
+function mousePressed(){
+if(screen==="end"){
+const cx=width/2,by=320,bw=200,bh=48;
+if(mouseY>=by&&mouseY<=by+bh){
+if(mouseX>=cx-220&&mouseX<=cx-220+bw)startSelectedGame();
+else if(mouseX>=cx+20&&mouseX<=cx+20+bw){screen="menu";song.pause();song.muted=false;}
+}
+return false;
+}
+if(screen!=="menu")return false;
+const cx=width/2;
+const sy=157;
+const songW=260;
+const songH=52;
+for(let i=0;i<2;i++){
+const bx=i===0?cx-songW-10:cx+10;
+if(mouseX>=bx&&mouseX<=bx+songW&&mouseY>=sy&&mouseY<=sy+songH){
+selectedSong=i;
+if(song){
+song.pause();
+song.muted=false;
+song.src=selectedSong===0?"song1.mp3":"song2.mp3";
+song.load();
+}
+menuError="";
+return false;
+}
+}
+const py=309;
+if(mouseX>=cx-130&&mouseX<=cx+130&&mouseY>=py&&mouseY<=py+48){
+startSelectedGame();
+return false;
+}
+return false;
+}
+
+function draw(){
+if(screen==="menu"){
+drawMenu();
+return;
+}
+if(screen==="end"){
+drawEndScreen();
+return;
+}
+syncLaneKeys();
+background(0,0,255);
+let top=height/2-250;
+let bottom=top+500;
+if(!gameOk)return;
+fill(30,60,255);
+ellipse(width/2,height/2+250,2000,700);
+fill(10,86,255);
+ellipse(width/2,height/2+300,2000,500);
+drawLanes(top);
+drawNotes(top);
+coverOutside(0,width,top,bottom);
+if(gameStarted&&audioStartMs===null){
+const count=Math.ceil(Math.max(0,countInLength-getElapsedTime())/beatLength);
+if(count>0){
+fill(255);
+textAlign(CENTER,CENTER);
+textSize(46);
+text(count,width/2,top+95);
+}
+}
+if(gameStarted&&(song.ended||(chart.length>0&&chart.every(note=>note.hit))))finishGame();
+}
+
+function finishGame(){
+if(screen!=="game")return;
+screen="end";
+gameStarted=false;
+if(startTimer!==null){clearTimeout(startTimer);startTimer=null;}
+song.pause();
+song.muted=false;
+laneA=[false,false,false];
+}
+
+function drawEndScreen(){
+background(0,0,255);
+noStroke();
+fill(30,60,255);ellipse(width/2,height/2+280,1000,350);
+fill(10,86,255);ellipse(width/2,height/2+330,1000,250);
+textAlign(CENTER,CENTER);
+fill(255);textSize(14);text("ninew rhythm game one",width/2,58);
+textSize(46);text("song complete",width/2,132);
+fill(220,230,255);textSize(18);text(selectedSong===0?"song 1":"song 2",width/2,190);
+fill(255,230,120);textSize(15);text("ACCURACY",width/2,238);
+fill(255);textSize(34);text(accuracyDisplay,width/2,273);
+fill(255,130,190);rect(width/2-220,320,200,48);
+fill(255);textSize(18);text("play again",width/2-120,344);
+fill(45,80,190);rect(width/2+20,320,200,48);
+noFill();stroke(210,220,255);rect(width/2+20,320,200,48);
+noStroke();fill(255);textSize(18);text("menu",width/2+120,344);
+textAlign(LEFT,BASELINE);
+}
+
+function drawLanes(top){
+const colors=[[130,35,75,125],[35,125,65,125],[145,85,20,125]],labels=["←","↓","→"];
+for(let lane=0;lane<3;lane++){
+const x=verticalLaneStart+lane*verticalLaneWidth,flash=(millis()-laneFlashStart[lane])/100;
+stroke(255);strokeWeight(2);fill(...colors[lane]);rect(x,top-1,verticalLaneWidth,502);
+if(flash>=0&&flash<1){noStroke();fill(255,255,255,75*(1-flash));rect(x,top-1,verticalLaneWidth,502);stroke(255);strokeWeight(2);}
+noStroke();fill(255,255,255,175);rect(x,top+400,verticalLaneWidth,20);
+if(getElapsedTime()<4000){fill(255);textAlign(CENTER,CENTER);textSize(14);text(labels[lane],x+verticalLaneWidth/2,top+18);}
+}
+noStroke();
+}
+
+function judgeReleaseGrade(diff){
+if(diff<=holdReleaseWindow*0.35)return "GREAT";
+if(diff<=holdReleaseWindow*0.6)return "GOOD";
+return "OK";
+}
+
+function finishHold(note,releaseDiff){
+if(note.hit||note.broken)return;
+note.hit=true;
+note.holding=false;
+const startGrade=judgeGrade(note.startDiff||0);
+const releaseGrade=judgeReleaseGrade(releaseDiff||0);
+const rank={MISS:0,OK:1,GOOD:2,GREAT:3};
+feedback=rank[startGrade]<rank[releaseGrade]?startGrade:releaseGrade;
+recordAccuracy(note,feedback);
+feedbackLane=note.l;
+feedbackUntil=millis()+700;
+}
+
+function breakHold(note,lane){
+if(note.hit||note.broken)return;
+note.holding=false;
+note.broken=true;
+note.brokenAt=getElapsedTime();
+note.fading=true;
+note.fadingAt=note.brokenAt;
+recordAccuracy(note,"MISS");
+feedback="MISS";
+feedbackLane=lane;
+feedbackUntil=millis()+700;
+}
+
+function drawNotes(top){
+const elapsed=getElapsedTime();
+const verticalHitY=top+410;
+const verticalSpawnY=top-20;
+const bottom=top+500;
+const noteColors=[[255,70,140],[60,255,130],[255,180,45]];
+for(let i=0;i<chart.length;i++){
+const note=chart[i];
+const noteTime=getNoteTime(note);
+const originalHoldEndTime=getNoteTime({b:note.b+note.h});
+const holdEndTime=note.started?note.holdEndTime:originalHoldEndTime;
+if(note.holding){
+if(note.releasePending){
+if(laneA[note.l]){
+note.releasePending=false;
+delete note.releaseAt;
+}else if(elapsed-note.releaseAt>=holdReleaseWindow){
+const releaseDiff=Math.abs(elapsed-note.holdEndTime);
+if(releaseDiff<=holdReleaseWindow)finishHold(note,releaseDiff);
+else breakHold(note,note.l);
+}
+}
+if(note.holding&&!note.releasePending&&elapsed>note.holdEndTime+holdReleaseWindow)breakHold(note,note.l);
+if(note.holding&&!note.releasePending&&!note.fading){
+while(note.nextHoldTickTime<note.holdEndTime&&note.nextHoldTickTime<=Math.min(elapsed,note.holdEndTime)){
+if(millis()>=feedbackUntil){
+feedback="GREAT";
+feedbackLane=note.l;
+feedbackUntil=millis()+holdTickLength*0.9;
+}
+note.nextHoldTickTime+=holdTickLength;
+}
+}
+}
+if(!note.hit&&!note.started&&!note.missed&&elapsed>noteTime+150){
+note.missed=true;
+recordAccuracy(note,"MISS");
+feedback="MISS";
+feedbackLane=note.l;
+feedbackUntil=millis()+700;
+}
+if(gameStarted&&!note.hit){
+const spawnTime=noteTime-noteTravelTime;
+const progress=(elapsed-spawnTime)/noteTravelTime;
+const spawnPos=verticalSpawnY;
+const hitPos=verticalHitY;
+const pixelsPerMs=(hitPos-spawnPos)/noteTravelTime;
+const isVisible=(elapsed>=spawnTime&&elapsed<=noteTime+150)||note.started||note.missed;
+if(isVisible){
+let notePos;
+if(note.started&&!note.broken)notePos=hitPos;
+else if(note.started&&note.broken)notePos=hitPos+Math.max(0,elapsed-(note.brokenAt??noteTime))*pixelsPerMs;
+else notePos=spawnPos+(hitPos-spawnPos)*Math.max(0,progress);
+const noteAlpha=note.fading?Math.max(0,1-(elapsed-note.fadingAt)/holdFadeLength):1;
+const noteColor=note.fading?[255,35,35]:noteColors[note.l];
+fill(noteColor[0],noteColor[1],noteColor[2],180*noteAlpha);
+let tailPos=notePos;
+let holdLength=0;
+if(note.h>0){
+if(note.started&&!note.broken)holdLength=Math.max(0,holdEndTime-elapsed)*pixelsPerMs;
+else if(note.started&&note.broken)holdLength=Math.max(0,holdEndTime-(note.brokenAt??elapsed))*pixelsPerMs;
+else holdLength=note.h*beatLength*pixelsPerMs;
+tailPos=notePos-holdLength;
+{
+const laneX=verticalLaneStart+note.l*verticalLaneWidth;
+rect(laneX,tailPos,verticalLaneWidth,holdLength);
+if(note.fading)stroke(255,35,35,255*noteAlpha);
+else stroke(255,255*noteAlpha);
+strokeWeight(2);
+rect(laneX,tailPos-7,verticalLaneWidth,14);
+noStroke();
+}
+}
+fill(noteColor[0],noteColor[1],noteColor[2],255*noteAlpha);
+{
+const laneX=verticalLaneStart+note.l*verticalLaneWidth;
+if(note.fading)stroke(255,35,35,255*noteAlpha);
+else stroke(255,255*noteAlpha);
+strokeWeight(2);
+rect(laneX,notePos-9,verticalLaneWidth,18);
+noStroke();
+if((note.missed||(note.started&&note.broken))&&(note.h>0?tailPos>bottom+30:notePos>bottom+30))note.hit=true;
+}
+}
+}
+}
+push();
+textAlign(LEFT,TOP);
+noStroke();
+fill(255);
+textSize(14);
+text("ACCURACY",18,14);
+textSize(24);
+fill(255,230,120);
+text(accuracyDisplay,18,32);
+pop();
+if(millis()<feedbackUntil&&feedbackLane>=0){
+push();
+fill(255);
+textSize(12);
+textAlign(CENTER,CENTER);
+text(feedback,verticalLaneStart+verticalLaneWidth*(feedbackLane+0.5),top+445);
+pop();
+}
+}
+
+function drawMenu(){
+background(0,0,255);
+noStroke();
+fill(30,60,255);
+ellipse(width/2,height/2+280,1000,350);
+fill(10,86,255);
+ellipse(width/2,height/2+330,1000,250);
+textAlign(CENTER,CENTER);
+fill(255);
+textSize(14);
+text("ninew rhythm game one",width/2,43);
+textSize(52);
+text("rhythm",width/2,91);
+fill(210,220,255);
+textSize(13);
+text("only two songs bruh",width/2,126);
+const cx=width/2;
+const sy=157;
+const songW=260;
+const songH=52;
+const songNames=["song 1","song 2"];
+for(let i=0;i<2;i++){
+const bx=i===0?cx-songW-10:cx+10;
+fill(selectedSong===i?(i===0?255:190):35,selectedSong===i?(i===0?130:100):65,selectedSong===i?(i===0?190:145):100);
+rect(bx,sy,songW,songH);
+noFill();
+stroke(selectedSong===i?255:120,selectedSong===i?225:130,selectedSong===i?245:180);
+rect(bx,sy,songW,songH);
+noStroke();
+fill(255);
+textSize(18);
+text(songNames[i],bx+songW/2,sy+songH/2);
+}
+const py=309;
+fill(255,130,190);
+rect(cx-130,py,260,48);
+fill(255);
+textSize(18);
+text("play",cx,py+24);
+fill(220,230,255);
+textSize(11);
+text("← / ↓ / → to hit notes!",cx,py+88);
+if(menuError){
+fill(255,150,150);
+textSize(12);
+text(menuError,cx,py+110);
+}
+textAlign(LEFT,BASELINE);
+}
+
+function coverOutside(left,right,top,bottom){
+noStroke();
+fill(0);
+rect(0,0,width,top);
+rect(0,bottom,width,height-bottom);
+rect(0,0,left,height);
+rect(right,0,width-right,height);
+}
+
+function laneFromKeyCode(code){
+if(code===LEFT_ARROW)return 0;
+if(code===DOWN_ARROW)return 1;
+if(code===RIGHT_ARROW)return 2;
+return -1;
+}
+
+function laneKeyCodes(){
+return [LEFT_ARROW,DOWN_ARROW,RIGHT_ARROW];
+}
+
+function releaseLane(lane){
+laneA[lane]=false;
+const elapsed=getElapsedTime();
+for(const note of chart){
+if(!note.holding||note.l!==lane||note.releasePending)continue;
+const diff=Math.abs(elapsed-note.holdEndTime);
+if(diff<=holdReleaseWindow)finishHold(note,diff);
+else{
+note.releasePending=true;
+note.releaseAt=elapsed;
+}
+}
+}
+
+function releaseAllKeys(){
+for(let lane=0;lane<3;lane++)releaseLane(lane);
+}
+
+function syncLaneKeys(){
+const keyCodes=laneKeyCodes();
+for(let lane=0;lane<3;lane++)if(laneA[lane]&&!keyIsDown(keyCodes[lane]))releaseLane(lane);
+}
+
+function keyPressed(event){
+if(screen==="menu"){
+if(keyCode===LEFT_ARROW||keyCode===RIGHT_ARROW){
+selectedSong=selectedSong===0?1:0;
+song.pause();
+song.muted=false;
+song.src=selectedSong===0?"song1.mp3":"song2.mp3";
+song.load();
+menuError="";
+}
+return false;
+}
+if(screen==="end"){
+return false;
+}
+if(screen!=="game")return false;
+const lane=laneFromKeyCode(keyCode);
+if(lane<0)return false;
+if(event&&event.repeat)return false;
+if(laneA[lane])return false;
+laneA[lane]=true;
+laneFlashStart[lane]=millis();
+if(!gameStarted)return false;
+const elapsed=getElapsedTime();
+const pendingHold=chart.find(note=>note.holding&&note.releasePending&&note.l===lane);
+if(pendingHold){
+if(elapsed-pendingHold.releaseAt<=holdReleaseWindow){
+pendingHold.releasePending=false;
+delete pendingHold.releaseAt;
+}else{
+breakHold(pendingHold,lane);
+}
+return false;
+}
+let best=-1;
+let bestDiff=151;
+for(let i=0;i<chart.length;i++){
+const note=chart[i];
+const diff=Math.abs(elapsed-getNoteTime(note));
+if(!note.hit&&!note.started&&!note.missed&&note.l===lane&&diff<bestDiff){
+best=i;
+bestDiff=diff;
+}
+}
+if(best>=0&&bestDiff<=150){
+const note=chart[best];
+if(note.h>0){
+const holdEndTime=getNoteTime({b:note.b+note.h});
+if(elapsed>=holdEndTime){
+note.hit=true;
+recordAccuracy(note,"MISS");
+feedback="MISS";
+feedbackLane=lane;
+feedbackUntil=millis()+700;
+}else{
+note.started=true;
+note.holding=true;
+note.startDiff=bestDiff;
+note.holdEndTime=holdEndTime;
+note.nextHoldTickTime=Math.max(elapsed,getNoteTime(note))+holdTickLength;
+feedback=judgeGrade(bestDiff);
+feedbackLane=lane;
+feedbackUntil=millis()+700;
+}
+}else{
+note.hit=true;
+feedback=judgeGrade(bestDiff);
+recordAccuracy(note,feedback);
+feedbackLane=lane;
+feedbackUntil=millis()+700;
+}
+}
+return false;
+}
+
+function keyReleased(){
+const lane=laneFromKeyCode(keyCode);
+if(lane>=0)releaseLane(lane);
+return false;
+}
+
+</script>
+</body>
+</html>
