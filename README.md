@@ -1,8 +1,8 @@
 # rhythm-game-1
-a rhythm game with just two songs
+a rhythm game with just three levels (and level 2 doesn't even have a song)
 It consists of three lanes, with hit and hold notes
 
-(The first song was from a copyright free site, and the second song was made by my friend)
+(The first song was from a copyright free site, and the second song (level 3) was made by my friend)
 
 Arrow keys to move!
 
